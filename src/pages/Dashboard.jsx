@@ -1,53 +1,44 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export default function Dashboard() {
 
-  const [history, setHistory] = useState([]);
-  const [todayEvents, setTodayEvents] = useState([]);
-  const [tomorrowEvents, setTomorrowEvents] = useState([]);
+  /* 🔥 TODAY DATE */
+  const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("scheduleHistory")) || [];
-    setHistory(data);
+  /* 🔥 INTERVIEW DATA */
+  const interviews = [
+    { name: "John Doe", domain: "ML", date: today, time: "10:00 AM" },
+    { name: "Arun Kumar", domain: "Web", date: today, time: "02:00 PM" },
+    { name: "Sneha", domain: "Data Science", date: "2026-04-06", time: "11:00 AM" }
+  ];
 
-    const today = new Date().toISOString().split("T")[0];
+  const todayInterviews = useMemo(
+    () => interviews.filter(i => i.date === today),
+    [interviews, today]
+  );
 
-    const tomorrowDate = new Date();
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrow = tomorrowDate.toISOString().split("T")[0];
-
-    setTodayEvents(data.filter(d => d.date === today));
-    setTomorrowEvents(data.filter(d => d.date === tomorrow));
-
-  }, []);
+  const upcomingInterviews = useMemo(
+    () => interviews.filter(i => i.date !== today),
+    [interviews, today]
+  );
 
   return (
     <div className="flex-1 p-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">📊 HR Dashboard</h1>
-        <button className="bg-gradient-to-r from-blue-500 to-cyan-400 px-4 py-2 rounded-lg text-sm">
-          + New Drive
+        <h1 className="text-xl font-semibold">📊 Dashboard</h1>
+        <button className="bg-blue-600 px-4 py-2 rounded-lg text-sm">
+          + New Hiring
         </button>
       </div>
 
       {/* 🔥 STATS */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-
-        <StatCard title="Total Applications" value="248" sub="+34 this month" />
-        <StatCard title="Selected" value="86" sub="35%" green />
-        <StatCard title="Rejected" value="120" sub="48%" red />
-        <StatCard title="Schedules" value={history.length} sub="Active" />
-
-      </div>
-
-      {/* 🔥 LIVE TRACKING */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-
-        <LiveCard title="🔥 Today Events" data={todayEvents} color="green" />
-        <LiveCard title="⏳ Tomorrow Events" data={tomorrowEvents} color="yellow" />
-
+        <StatCard title="Total Applications" value="248" sub="+34 this week" />
+        <StatCard title="Selected" value="86" sub="+12 selected" green />
+        <StatCard title="Rejected" value="120" sub="+20 rejected" red />
+        <StatCard title="Open Vacancies" value="9" sub="Active roles" />
       </div>
 
       {/* 🔥 MAIN GRID */}
@@ -55,54 +46,76 @@ export default function Dashboard() {
 
         {/* DOMAIN VACANCIES */}
         <div className="card">
-          <h3 className="title mb-3">Domain Vacancies</h3>
+          <h3 className="title mb-3">📌 Domain Vacancies</h3>
 
-          <Vacancy title="ML Engineer" tech="Python, ML" status="Open" color="green" />
-          <Vacancy title="Web Dev" tech="React, Node" status="Open" color="green" />
-          <Vacancy title="Data Analyst" tech="SQL" status="Closed" color="red" />
+          <Vacancy title="ML Engineer" tech="Python, ML" status="Open" />
+          <Vacancy title="Web Developer" tech="React, Node" status="Open" />
+          <Vacancy title="Data Analyst" tech="SQL, Python" status="Closed" />
+          <Vacancy title="UI/UX Designer" tech="Figma" status="Open" />
         </div>
 
-        {/* 📊 FUNNEL GRAPH */}
+        {/* FUNNEL */}
         <div className="card">
-          <h3 className="title mb-3">Recruitment Funnel</h3>
+          <h3 className="title mb-3">📊 Recruitment Funnel</h3>
 
-          <Bar label="Applications" value={100} />
-          <Bar label="Screened" value={70} />
-          <Bar label="Aptitude" value={50} />
-          <Bar label="Technical" value={30} />
-          <Bar label="Coding" value={20} />
-          <Bar label="HR" value={10} />
+          <Progress label="Applications" value="248" width="100%" />
+          <Progress label="Aptitude" value="120" width="50%" />
+          <Progress label="Technical" value="70" width="30%" />
+          <Progress label="Coding" value="44" width="20%" />
+          <Progress label="HR" value="26" width="15%" />
+          <Progress label="Offers" value="14" width="10%" />
         </div>
 
-        {/* RIGHT PANEL */}
+        {/* 📅 INTERVIEW PANEL */}
         <div className="space-y-4">
 
           <div className="card">
-            <h3 className="title mb-2">Upcoming</h3>
+            <h3 className="title mb-2">📅 Today Interviews</h3>
 
-            {history.slice(0, 3).map((e, i) => (
-              <p key={i} className="text-sm text-blue-400">
-                {e.domain} — {e.round}
-              </p>
-            ))}
-
+            {todayInterviews.length === 0 ? (
+              <p className="text-gray-400 text-sm">No interviews today</p>
+            ) : (
+              todayInterviews.map((i, idx) => (
+                <div key={idx} className="p-2 bg-[#0f172a] rounded mb-2">
+                  <p className="font-medium">{i.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {i.domain} • {i.time}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="card">
-            <h3 className="title mb-2">Mail Activity</h3>
-            <p className="text-green-400">● Selected mails</p>
-            <p className="text-red-400">● Rejections</p>
-            <p className="text-blue-400">● Test links</p>
+            <h3 className="title mb-2">⏳ Upcoming Interviews</h3>
+
+            {upcomingInterviews.map((i, idx) => (
+              <div key={idx} className="p-2 bg-[#0f172a] rounded mb-2">
+                <p className="font-medium">{i.name}</p>
+                <p className="text-xs text-gray-400">
+                  {i.domain} • {i.date} • {i.time}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <h3 className="title mb-2">📬 Mail Activity</h3>
+            <p className="text-green-400 text-sm">● Selected mails sent</p>
+            <p className="text-red-400 text-sm">● Rejection mails sent</p>
+            <p className="text-blue-400 text-sm">● Test links sent</p>
           </div>
 
         </div>
+
       </div>
 
-      {/* 📊 DOMAIN PROGRESS */}
+      {/* 🔥 DOMAIN PROGRESS */}
       <div className="mt-6 card">
-        <h3 className="title mb-4">Domain Progress</h3>
 
-        <table className="w-full text-left">
+        <h3 className="title mb-4">📊 Domain-wise Progress</h3>
+
+        <table className="w-full text-left text-sm">
 
           <thead className="text-gray-400">
             <tr>
@@ -121,71 +134,56 @@ export default function Dashboard() {
           </tbody>
 
         </table>
+
       </div>
 
     </div>
   );
 }
 
-/* 🔹 COMPONENTS */
+/* 🔥 COMPONENTS */
 
 function StatCard({ title, value, sub, green, red }) {
   return (
     <div className="card">
       <p className="text-gray-400 text-sm">{title}</p>
       <h2 className="text-2xl font-bold">{value}</h2>
-      <p className={`text-sm ${green ? "text-green-400" : red ? "text-red-400" : ""}`}>
+      <p className={`text-sm ${
+        green ? "text-green-400" :
+        red ? "text-red-400" :
+        "text-gray-400"
+      }`}>
         {sub}
       </p>
     </div>
   );
 }
 
-function LiveCard({ title, data, color }) {
-  return (
-    <div className={`card border ${color === "green" ? "border-green-500" : "border-yellow-500"}`}>
-      <h3 className="title mb-3">{title}</h3>
-
-      {data.length === 0 ? (
-        <p className="text-gray-400 text-sm">No events</p>
-      ) : (
-        data.map((e, i) => (
-          <div key={i} className="flex justify-between text-sm mb-2">
-            <span>{e.domain} — {e.round}</span>
-            <span>{e.time}</span>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function Vacancy({ title, tech, status, color }) {
+function Vacancy({ title, tech, status }) {
   return (
     <div className="flex justify-between items-center mb-3 p-3 bg-[#0f172a] rounded-lg">
       <div>
         <p>{title}</p>
         <p className="text-gray-400 text-sm">{tech}</p>
       </div>
-
-      <span className={`px-2 py-1 text-xs rounded
-        ${color === "green" ? "bg-green-700" : "bg-red-700"}
-      `}>
+      <span className={`px-2 py-1 text-xs rounded ${
+        status === "Open" ? "bg-green-600" : "bg-red-600"
+      }`}>
         {status}
       </span>
     </div>
   );
 }
 
-function Bar({ label, value }) {
+function Progress({ label, value, width }) {
   return (
     <div className="mb-3">
-      <p className="text-sm mb-1">{label}</p>
+      <div className="flex justify-between text-sm mb-1">
+        <span>{label}</span>
+        <span>{value}</span>
+      </div>
       <div className="w-full bg-gray-700 h-2 rounded-full">
-        <div
-          className="bg-blue-400 h-2 rounded-full"
-          style={{ width: `${value}%` }}
-        ></div>
+        <div className="bg-blue-500 h-2 rounded-full" style={{ width }}></div>
       </div>
     </div>
   );

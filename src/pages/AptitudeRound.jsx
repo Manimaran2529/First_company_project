@@ -1,230 +1,183 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function AptitudeRound() {
 
-  const [domain, setDomain] = useState("Data Science");
-  const [cutoff, setCutoff] = useState(60);
-  const [candidates, setCandidates] = useState([]);
+  // 🔥 ONLY HR SCHEDULED DOMAINS
+  const scheduledDomains = ["ML", "Data Science", "Web"];
 
-  const [showModal, setShowModal] = useState(false);
-  const [nextRound, setNextRound] = useState("Technical");
-  const [nextDate, setNextDate] = useState("");
-  const [nextTime, setNextTime] = useState("");
+  const [domain, setDomain] = useState("ML");
 
-  // LOAD DATA
-  useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("candidates")) || [];
+  // 🔥 DATABASE (SIMULATION)
+  const [candidates, setCandidates] = useState([
+    { name: "John Doe", email: "john@gmail.com", domain: "ML", marks: 22 },
+    { name: "Priya Sharma", email: "priya@gmail.com", domain: "Data Science", marks: 12 },
+    { name: "Arun Kumar", email: "arun@gmail.com", domain: "Web", marks: 25 },
+    { name: "Kiran Raj", email: "kiran@gmail.com", domain: "ML", marks: 17 }
+  ]);
 
-    const filtered = data
-      .filter(c => c.status === "Selected" && c.domain === domain)
-      .map(c => ({
-        ...c,
-        score: Math.floor(Math.random() * 100)
-      }));
+  const cutoff = 18;
 
-    setCandidates(filtered);
-  }, [domain]);
+  // FILTER DOMAIN
+  const filtered = candidates.filter(c => c.domain === domain);
 
-  const passed = candidates.filter(c => c.score >= cutoff);
-  const failed = candidates.filter(c => c.score < cutoff);
+  const evaluated = filtered.map(c => ({
+    ...c,
+    status: c.marks >= cutoff ? "Passed" : "Rejected"
+  }));
 
-  const sendNextRoundMail = () => {
-    if (!nextDate || !nextTime) {
-      alert("Enter date & time");
-      return;
-    }
+  const passed = evaluated.filter(c => c.status === "Passed");
+  const rejected = evaluated.filter(c => c.status === "Rejected");
 
+  // 🔥 SEND MAIL FUNCTIONS
+  const sendSelectedMail = () => {
     passed.forEach(c => {
-      console.log(`Mail sent to ${c.email}`);
+      console.log(`MAIL TO ${c.email}
+You passed Aptitude 🎉`);
     });
 
-    alert("Next round mail sent!");
-    setShowModal(false);
+    alert("Selected mail sent!");
   };
 
-  const sendRejectionMail = () => {
-    failed.forEach(c => {
-      console.log(`Rejected mail sent to ${c.email}`);
+  const sendRejectedMail = () => {
+    rejected.forEach(c => {
+      console.log(`MAIL TO ${c.email}
+Better luck next time`);
     });
 
-    alert("Rejection mail sent!");
+    // ❌ REMOVE REJECTED FROM DATABASE
+    setCandidates(prev =>
+      prev.filter(c => !(c.domain === domain && c.marks < cutoff))
+    );
+
+    alert("Rejected candidates removed!");
   };
 
   return (
-    <div className="flex-1 p-10">
+    <div className="flex-1 p-6">
 
-      <h1 className="text-3xl font-semibold mb-6">Aptitude Round</h1>
+      {/* HEADER */}
+      <h1 className="text-2xl font-semibold mb-6">🧠 Aptitude Round</h1>
 
-      {/* TOP CONTROLS */}
-      <div className="flex gap-6 mb-6">
+      {/* DOMAIN SELECT */}
+      <select
+        value={domain}
+        onChange={(e) => setDomain(e.target.value)}
+        className="mb-6 bg-[#0f172a] p-2 rounded-lg border border-gray-600"
+      >
+        {scheduledDomains.map((d, i) => (
+          <option key={i}>{d}</option>
+        ))}
+      </select>
 
-        <div className="bg-[#111827] p-4 rounded-xl w-[250px]">
-          <label>Domain</label>
-          <select
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            className="w-full mt-2 p-2 bg-gray-800 rounded"
-          >
-            <option>Web</option>
-            <option>ML</option>
-            <option>Data Science</option>
-          </select>
-        </div>
+      {/* CRITERIA */}
+      <div className="bg-[#111827] p-4 rounded-lg border border-gray-700 mb-6">
 
-        <div className="bg-[#111827] p-4 rounded-xl w-[200px]">
-          <label>Cutoff</label>
-          <input
-            type="number"
-            value={cutoff}
-            onChange={(e) => setCutoff(e.target.value)}
-            className="w-full mt-2 p-2 bg-gray-800 rounded"
-          />
-        </div>
+        <h3 className="font-semibold mb-2">Aptitude Test Criteria</h3>
+
+        <p className="text-gray-400 text-sm">
+          Total Questions: <span className="text-white">30</span>
+        </p>
+
+        <p className="text-gray-400 text-sm mt-2">
+          Minimum Correct Answers Required
+        </p>
+
+        <input
+          value={cutoff}
+          disabled
+          className="mt-2 w-full bg-[#0f172a] p-2 rounded-lg border border-gray-600"
+        />
+
+        <p className="text-green-400 mt-2">
+          Pass Rule: {cutoff} / 30
+        </p>
 
       </div>
 
-      {/* PASSED TABLE */}
-      <div className="mb-8 bg-[#111827] p-6 rounded-xl border border-green-500">
+      {/* SUMMARY */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
 
-        <h2 className="text-green-400 mb-4 text-lg">
-          Passed Candidates ({passed.length})
-        </h2>
+        <Box title="Total" value={evaluated.length} />
+        <Box title="Passed" value={passed.length} green />
+        <Box title="Rejected" value={rejected.length} red />
+
+      </div>
+
+      {/* TABLE */}
+      <div className="bg-[#111827] p-4 rounded-lg border border-gray-700">
+
+        <h3 className="mb-4 font-semibold">Candidate Results</h3>
 
         <table className="w-full text-sm">
+
           <thead className="text-gray-400">
             <tr>
-              <th className="text-left">Name</th>
+              <th>Name</th>
               <th>Email</th>
-              <th>Marks</th>
-              <th>Resume</th>
+              <th>Domain</th>
+              <th>Score</th>
+              <th>Status</th>
             </tr>
           </thead>
 
           <tbody>
-            {passed.map((c, i) => (
+            {evaluated.map((c, i) => (
               <tr key={i} className="border-t border-gray-700">
-                <td>{c.name}</td>
+
+                <td className="py-2">{c.name}</td>
                 <td>{c.email}</td>
-                <td className="text-green-400 font-semibold">{c.score}</td>
+                <td>{c.domain}</td>
+                <td>{c.marks}/30</td>
+
                 <td>
-                  <a
-                    href={c.resume}
-                    target="_blank"
-                    className="text-blue-400"
-                  >
-                    View PDF
-                  </a>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    c.status === "Passed"
+                      ? "bg-green-600"
+                      : "bg-red-600"
+                  }`}>
+                    {c.status}
+                  </span>
                 </td>
+
               </tr>
             ))}
           </tbody>
+
         </table>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="mt-4 bg-green-500 px-4 py-2 rounded"
-        >
-          Send Next Round Mail ({passed.length})
-        </button>
       </div>
 
-      {/* FAILED TABLE */}
-      <div className="bg-[#111827] p-6 rounded-xl border border-red-500">
-
-        <h2 className="text-red-400 mb-4 text-lg">
-          Rejected Candidates ({failed.length})
-        </h2>
-
-        <table className="w-full text-sm">
-          <thead className="text-gray-400">
-            <tr>
-              <th className="text-left">Name</th>
-              <th>Email</th>
-              <th>Marks</th>
-              <th>Resume</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {failed.map((c, i) => (
-              <tr key={i} className="border-t border-gray-700">
-                <td>{c.name}</td>
-                <td>{c.email}</td>
-                <td className="text-red-400 font-semibold">{c.score}</td>
-                <td>
-                  <a
-                    href={c.resume}
-                    target="_blank"
-                    className="text-blue-400"
-                  >
-                    View PDF
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* BUTTONS */}
+      <div className="flex gap-4 mt-6">
 
         <button
-          onClick={sendRejectionMail}
-          className="mt-4 bg-red-500 px-4 py-2 rounded"
-        >
-          Send Rejection Mail ({failed.length})
+          onClick={sendSelectedMail}
+          className="bg-green-600 px-5 py-2 rounded-lg">
+          Send Selected Mail ({passed.length})
         </button>
+
+        <button
+          onClick={sendRejectedMail}
+          className="bg-red-600 px-5 py-2 rounded-lg">
+          Send Rejection Mail ({rejected.length})
+        </button>
+
       </div>
 
-      {/* MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+    </div>
+  );
+}
 
-          <div className="bg-[#111827] p-6 rounded-xl w-[350px]">
-
-            <h2 className="mb-4">Next Round Details</h2>
-
-            <select
-              value={nextRound}
-              onChange={(e) => setNextRound(e.target.value)}
-              className="w-full mb-3 p-2 bg-gray-800 rounded"
-            >
-              <option>Technical</option>
-              <option>Coding</option>
-              <option>HR</option>
-            </select>
-
-            <input
-              type="date"
-              value={nextDate}
-              onChange={(e) => setNextDate(e.target.value)}
-              className="w-full mb-3 p-2 bg-gray-800 rounded"
-            />
-
-            <input
-              type="time"
-              value={nextTime}
-              onChange={(e) => setNextTime(e.target.value)}
-              className="w-full mb-4 p-2 bg-gray-800 rounded"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={sendNextRoundMail}
-                className="flex-1 bg-green-500 py-2 rounded"
-              >
-                Send
-              </button>
-
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 bg-gray-600 py-2 rounded"
-              >
-                Cancel
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
+/* CARD */
+function Box({ title, value, green, red }) {
+  return (
+    <div className={`p-4 rounded-lg ${
+      green ? "border border-green-500" :
+      red ? "border border-red-500" :
+      "border border-gray-700"
+    }`}>
+      <p>{title}</p>
+      <h2>{value}</h2>
     </div>
   );
 }
